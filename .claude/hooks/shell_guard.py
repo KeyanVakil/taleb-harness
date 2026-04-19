@@ -1,42 +1,23 @@
 #!/usr/bin/env python3
-"""Shell guard — PreToolUse hook for Bash.
+"""Shell guard: reject known-destructive bash patterns. Floor, not ceiling."""
+from _lib import fail, read_payload
 
-Floor, not ceiling: blocks known-destructive patterns so the agent cannot
-stumble into them. The human operator is the real ceiling.
-"""
-from __future__ import annotations
-
-import json
-import sys
-
-DESTRUCTIVE_PATTERNS = (
-    "rm -rf /",
-    "rm -fr /",
-    ":(){ :|:& };:",
-    "mkfs",
-    "dd if=",
-    "> /dev/sd",
-    "git push --force",
-    "git push -f ",
-    "git reset --hard origin",
-    "shutdown",
-    "reboot",
+PATTERNS = (
+    "rm -rf /", "rm -fr /", ":(){ :|:& };:", "mkfs", "dd if=",
+    "> /dev/sd", "git push --force", "git push -f ",
+    "git reset --hard origin", "shutdown", "reboot",
 )
 
 
-def main() -> int:
-    payload = json.load(sys.stdin)
-    cmd = (payload.get("tool_input", {}).get("command") or "").lower()
-    for pat in DESTRUCTIVE_PATTERNS:
+def main() -> None:
+    cmd = ((read_payload().get("tool_input") or {}).get("command") or "").lower()
+    for pat in PATTERNS:
         if pat in cmd:
-            print(
-                f"Shell guard: command contains destructive pattern '{pat}'. "
-                f"Refused. Ask the human if this is really needed.",
-                file=sys.stderr,
+            fail(
+                f"Shell guard: destructive pattern '{pat}'. Refused. "
+                f"Ask the human if this is really needed."
             )
-            return 2
-    return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
