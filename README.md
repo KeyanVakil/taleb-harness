@@ -2,18 +2,19 @@
 
 A Nassim Taleb–shaped harness for Claude Code, encoded as **hooks**, not vibes.
 
-Most coding-agent systems put "please be careful" in a system prompt and hope. This repo drops into any project as a `.claude/` directory — Claude Code enforces the principles at the **tool-call level**, rejecting any action that violates them. Prompts are persuasion. Hooks are runtime.
+Most coding-agent systems put "please be careful" in a system prompt and hope. This repo ships as a **Claude Code plugin** — Claude Code enforces the principles at the **tool-call level**, rejecting any action that violates them. Prompts are persuasion. Hooks are runtime.
 
-## Install into any project
+## Install
 
 ```bash
-# from the root of your project
-git clone https://github.com/KeyanVakil/taleb-harness /tmp/th
-cp -r /tmp/th/.claude .
-cp /tmp/th/CLAUDE.md .
+# one-time, global:
+claude plugin install taleb-harness
+
+# or, for local dev against this repo:
+claude --plugin-dir /path/to/taleb-harness
 ```
 
-Then run `claude` in that project as usual. The hooks are active.
+Then just run `claude` in any project. Hooks fire on every tool call.
 
 ## The principles, as hooks
 
@@ -22,10 +23,9 @@ Then run `claude` in that project as usual. The hooks are active.
 | **Via negativa** | `no_ghosts` (Pre) + `addition_budget` (Pre) | Rejects new `TODO`/`FIXME`/`XXX`/`HACK` markers; tracks net lines added against a session budget |
 | **Skin in the game** | `skin_in_the_game` (Stop) + `stressor` (Stop) | Blocks `Stop` without a recent green test run; optional stress-test rerun with `PYTHONHASHSEED=random` |
 | **Barbell** | `barbell` (Pre) + `fold_discipline` (Stop) | Rejects Write/Edit/MultiEdit with >15-line diffs unless under `.harness/spikes/`; blocks `Stop` if spikes aren't folded |
-| **Antifragility** | `antifragile` (Post) | Appends test failures to `.harness/lessons.md`; stamps `.harness/last_green_run` on pass |
-| **Lindy** | `lindy` (Pre) | Rejects edits to files unmodified >1 yr per `git log`; soft-warns on >30 days |
+| **Antifragility** | `antifragile` (Post) | Appends test failures to `.harness/lessons.md`; stamps `.harness/last_green_run` on pass; auto-commits the tree after every green test run |
+| **Lindy** | `lindy` (Pre) | Rejects edits to files unmodified >1 yr per `git log` |
 | **Iatrogenics** | `scope` (Pre) | Rejects writes outside globs declared in `.harness/scope.txt` |
-| **Optionality** | `auto_commit` (Post) | Auto-commits the tree after every green test run |
 | **Black swan** | `black_swan` (Stop) | Requires `.harness/black_swans.md` with ≥3 enumerated edge cases |
 | (shell safety) | `shell_guard` (Pre) | Blocks a list of known-destructive Bash patterns |
 
