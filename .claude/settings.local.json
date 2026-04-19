@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv .harness/spikes/settings.json .claude/settings.json)",
+      "Bash(rm -rf .claude/hooks)"
+    ]
+  }
+}

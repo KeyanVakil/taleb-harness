@@ -1,0 +1,12 @@
+{
+  "name": "taleb-harness",
+  "version": "0.1.0",
+  "description": "Taleb-principles harness for Claude Code, enforced as hooks",
+  "author": {
+    "name": "Keyan Vakil"
+  },
+  "homepage": "https://github.com/KeyanVakil/taleb-harness",
+  "repository": "https://github.com/KeyanVakil/taleb-harness",
+  "license": "MIT",
+  "keywords": ["hooks", "taleb", "guardrails", "testing", "discipline"]
+}
