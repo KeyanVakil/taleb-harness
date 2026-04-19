@@ -1,0 +1,46 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {"type": "command", "command": "python .claude/hooks/barbell.py"},
+          {"type": "command", "command": "python .claude/hooks/lindy.py"},
+          {"type": "command", "command": "python .claude/hooks/addition_budget.py"},
+          {"type": "command", "command": "python .claude/hooks/scope.py"},
+          {"type": "command", "command": "python .claude/hooks/no_ghosts.py"}
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "python .claude/hooks/shell_guard.py"}
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit",
+        "hooks": [
+          {"type": "command", "command": "python .claude/hooks/antifragile.py"}
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "python .claude/hooks/auto_commit.py"}
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {"type": "command", "command": "python .claude/hooks/skin_in_the_game.py"},
+          {"type": "command", "command": "python .claude/hooks/fold_discipline.py"},
+          {"type": "command", "command": "python .claude/hooks/black_swan.py"},
+          {"type": "command", "command": "python .claude/hooks/stressor.py"}
+        ]
+      }
+    ]
+  }
+}

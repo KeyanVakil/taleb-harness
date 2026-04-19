@@ -13,3 +13,5 @@ venv/
 .ruff_cache/
 *.log
 .harness/
+sandbox/
+sandbox2/

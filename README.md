@@ -1,57 +1,66 @@
 # taleb-harness
 
-A coding-agent harness that treats Nassim Nicholas Taleb's principles as **architecture**, not vibes.
+A Nassim Taleb–shaped harness for Claude Code, encoded as **hooks**, not vibes.
 
-Most agent harnesses put "be careful" in the system prompt and hope. This one puts the rules in the runtime. When the model tries to violate a principle, the harness rejects the action and the failure feeds back into the next turn.
+Most coding-agent systems put "please be careful" in a system prompt and hope. This repo drops into any project as a `.claude/` directory — Claude Code enforces the principles at the **tool-call level**, rejecting any action that violates them. Prompts are persuasion. Hooks are runtime.
 
-## The principles, as code
-
-| Principle | Encoding |
-|---|---|
-| **Via negativa** — subtract, don't add | The agent must call `consider_deletion` before non-trivial additions. Net line delta is surfaced on every write. |
-| **Skin in the game** | Writes are followed by `run_shell`. No `finish` is allowed without running the code. |
-| **Barbell** | Writes are either SAFE (≤15 lines diff) or SPIKE (under `.harness/spikes/`, declared first). The "medium refactor" is mechanically rejected. |
-| **Antifragility** | Every failure is recorded to `.harness/lessons.md` and reinjected into the prompt. Repeated failures trigger a forced strategy change. |
-| **Lindy** | System prompt biases toward stdlib and established libraries. |
-| **Iatrogenics** | System prompt forbids drive-by refactors. |
-| **Optionality** | Commit-frequently guidance. Each turn aims to leave the tree runnable. |
-
-The `harness/principles.py` file is the source of truth — prompt + constants in one place. Guards in `harness/guards.py` enforce what the prompt asks for.
-
-## Install
+## Install into any project
 
 ```bash
-pip install -e .
-export ANTHROPIC_API_KEY=sk-...
+# from the root of your project
+git clone https://github.com/KeyanVakil/taleb-harness /tmp/th
+cp -r /tmp/th/.claude .
+cp /tmp/th/CLAUDE.md .
 ```
 
-## Use
+Then run `claude` in that project as usual. The hooks are active.
 
-```bash
-harness "add a function `median` to stats.py and a test for it"
-```
+## The principles, as hooks
 
-The agent will, roughly:
+| Principle | Hook | Enforcement |
+|---|---|---|
+| **Via negativa** | `no_ghosts` (Pre) + `addition_budget` (Pre) | Rejects new `TODO`/`FIXME`/`XXX`/`HACK` markers; tracks net lines added against a session budget |
+| **Skin in the game** | `skin_in_the_game` (Stop) + `stressor` (Stop) | Blocks `Stop` without a recent green test run; optional stress-test rerun with `PYTHONHASHSEED=random` |
+| **Barbell** | `barbell` (Pre) + `fold_discipline` (Stop) | Rejects Write/Edit/MultiEdit with >15-line diffs unless under `.harness/spikes/`; blocks `Stop` if spikes aren't folded |
+| **Antifragility** | `antifragile` (Post) | Appends test failures to `.harness/lessons.md`; stamps `.harness/last_green_run` on pass |
+| **Lindy** | `lindy` (Pre) | Rejects edits to files unmodified >1 yr per `git log`; soft-warns on >30 days |
+| **Iatrogenics** | `scope` (Pre) | Rejects writes outside globs declared in `.harness/scope.txt` |
+| **Optionality** | `auto_commit` (Post) | Auto-commits the tree after every green test run |
+| **Black swan** | `black_swan` (Stop) | Requires `.harness/black_swans.md` with ≥3 enumerated edge cases |
+| (shell safety) | `shell_guard` (Pre) | Blocks a list of known-destructive Bash patterns |
 
-1. Consider whether the task can be solved by deletion (`consider_deletion`).
-2. Write a failing test first.
-3. Make a safe (≤15 line) edit.
-4. Run the test (`run_shell`).
-5. On failure, record a lesson and try again — with a forced strategy change if the same failure repeats.
-6. `finish` only after seeing the test pass.
+All hooks are standalone Python scripts with no dependencies beyond the stdlib. They are small — the longest is ~80 lines. They are tested (see `tests/`).
 
-## Why this shape
+## What happened to the old SDK version
 
-Taleb's project is about *how systems learn from error*. A coding agent that cannot feel pain from its own bugs is a forecasting machine pretending to build software. This harness makes the agent bear the consequences of what it writes, prefer deletion, avoid the middle ground, and treat every failure as signal rather than noise to retry through.
+The first version of this repo was a Python agent loop built on the Anthropic SDK — it had its own tools, its own message loop, its own system prompt. Under Taleb's own rules, that was the wrong shape: a lot of code reimplementing what Claude Code already does. The via-negativa move was to **delete the entire loop** and ride on top of Claude Code, converting the principles into hooks that intercept Claude Code's tool calls. The result is ~7× smaller and harder to argue with.
 
-The barbell in particular is the interesting constraint: "just do a 100-line refactor" is the shape of most agent failures. Disallowing it mechanically — either split into many tiny safe steps, or declare a throwaway spike — forces a cleaner decomposition.
+See commit history for the old SDK-based implementation.
+
+## Why the hook-based shape is correct
+
+The principles should make the wrong move *impossible*, not discouraged. A 15-line cap enforced by a PreToolUse hook that exits 2 is a constraint. A sentence in a system prompt that says "prefer small edits" is a wish. The agent can ignore a wish; it can't ignore a hook.
+
+The demo in the previous SDK version showed this working: the agent tried to write 84 lines in one shot, got rejected, re-reasoned to "declare a spike, validate design, fold back," and produced better code than it would have without the constraint. The hook-based rewrite preserves that property while deleting every piece of infrastructure we wrote to implement it.
+
+## Configuration
+
+- `.harness/scope.txt` — one glob per line, declared target paths for the current task
+- `.harness/black_swans.md` — enumerated edge cases; ≥3 bullets required before `Stop`
+- `.harness/lindy_overrides.txt` — paths allowed to bypass the Lindy guard, with reasons
+- `.harness/addition_budget.json` — `{"budget": N, "spent": M}`; defaults to `{"budget": 300, "spent": 0}`
+- `.harness/stress_test.sh` — opt-in script the stressor hook invokes with `PYTHONHASHSEED=random`
+
+All state lives under `.harness/` and is gitignored. It is session-local.
 
 ## Tests
 
 ```bash
-pip install -e ".[dev]"
+pip install pytest
 pytest
 ```
+
+Tests invoke each hook as a subprocess with fake Claude-Code-style JSON on stdin and check exit codes and messages.
 
 ## License
 
