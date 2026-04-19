@@ -31,6 +31,12 @@ def main(argv: list[str] | None = None) -> int:
         default=40,
         help="Safety cap on agent loop iterations.",
     )
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except OSError:
+                pass
     args = p.parse_args(argv)
     return run(args.task, args.dir.resolve(), max_turns=args.max_turns)
 
